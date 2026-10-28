@@ -1,10 +1,17 @@
 // Tutti i testi dell'interfaccia. Per l'inglese: en.ts con lo stesso tipo (typeof it).
 import type { Database } from '../lib/database.types'
 
-type Stage = Database['public']['Enums']['stage']
+type Enums = Database['public']['Enums']
 
 export const it = {
   app: { name: 'Crmeme', tagline: 'Il CRM per i meme' },
+  nav: {
+    catalog: 'Catalogo',
+    pipeline: 'Pipeline',
+    search: 'Cerca nel catalogo',
+    searchPlaceholder: 'Cerca titolo o descrizione…',
+    main: 'Navigazione principale',
+  },
   stage: {
     spotted: 'Avvistato',
     rising: 'In crescita',
@@ -13,11 +20,76 @@ export const it = {
     cringe: 'Cringe',
     dead: 'Morto',
     revival: 'Revival',
-  } satisfies Record<Stage, string>,
-  home: {
-    approvedCount: (n: number) => `${n} meme approvati in archivio`,
+  } satisfies Record<Enums['stage'], string>,
+  format: {
+    image_macro: 'Image macro',
+    reaction: 'Reaction',
+    screenshot: 'Screenshot',
+    comic: 'Fumetto',
+    object_label: 'Oggetti etichettati',
+    other: 'Altro',
+  } as Record<string, string>,
+  language: { it: 'Italiano', en: 'Inglese' } as Record<string, string>,
+  activity: {
+    created: 'Scheda creata',
+    approved: 'Approvato dalla moderazione',
+    stage_changed: (from: string, to: string) => `Stage: ${from} → ${to}`,
+    sighting_added: 'Nuovo avvistamento',
+    voted_milestone: (n: number) => `Traguardo: ${n} voti positivi`,
+  },
+  catalog: {
+    title: 'Catalogo',
+    filters: 'Filtri',
+    query: 'Testo',
+    stage: 'Stage',
+    tag: 'Tag',
+    community: 'Community',
+    language: 'Lingua',
+    sort: 'Ordina per',
+    any: 'Tutti',
+    sortBy: { score: 'Meme Score', recent: 'Data di inserimento', stage: 'Stage' },
+    apply: 'Cerca',
+    reset: 'Azzera filtri',
+    results: (n: number) => (n === 1 ? '1 meme' : `${n} meme`),
+    empty: 'Nessun meme corrisponde ai filtri.',
+    more: 'Carica altri',
+    communityTitle: (name: string) => `Community: ${name}`,
+    tagTitle: (name: string) => `Tag: #${name}`,
+    notFound: 'Community o tag inesistente.',
+  },
+  meme: {
+    score: 'Meme Score',
+    votes: 'Voti',
+    up: (n: number) => (n === 1 ? '1 positivo' : `${n} positivi`),
+    down: (n: number) => (n === 1 ? '1 negativo' : `${n} negativi`),
+    stage: 'Stage',
+    community: 'Community',
+    tags: 'Tag',
+    format: 'Formato',
+    language: 'Lingua',
+    firstSeen: 'Prima apparizione',
+    uploadedBy: 'Caricato da',
+    deletedUser: 'utente eliminato',
+    unknown: 'non indicata',
+    parent: 'Template di origine',
+    variants: 'Varianti',
+    noVariants: 'Nessuna variante registrata.',
+    timeline: 'Timeline attività',
+    notFound: 'Meme non trovato.',
+    nsfw: 'Contenuto sensibile',
+    showNsfw: 'Mostra contenuto sensibile',
+  },
+  pipeline: {
+    title: 'Pipeline',
+    intro: 'Ciclo di vita dei meme, dallo stage Avvistato al Revival.',
+    pickStage: 'Scegli lo stage',
+    empty: 'Nessun meme in questo stage.',
+  },
+  common: {
     loading: 'Caricamento…',
-    error: 'Impossibile contattare il database.',
+    error: 'Impossibile caricare i dati. Riprova tra poco.',
+    notFound: 'Pagina non trovata.',
+    home: 'Torna al catalogo',
   },
 }
 
