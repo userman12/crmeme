@@ -63,11 +63,36 @@ Gli utenti demo del seed (`*@example.com`) servono solo come dati; non ricevono 
 Un meme spostato per errore nella pipeline si corregge dall'editor SQL della dashboard:
 lì il vincolo "solo lo stage successivo" non si applica.
 
-## Deploy (Cloudflare Pages)
+## Deploy (Cloudflare Pages, da GitHub)
 
-1. Collega il repository GitHub a Cloudflare Pages.
-2. Build command `npm run build`, output directory `dist`.
-3. Variabili d'ambiente: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` del progetto di produzione.
-4. In Supabase → Authentication → URL Configuration, imposta il dominio pubblico come Site URL.
+1. Cloudflare → Workers & Pages → Create → Pages → **Connect to Git** → repository `crmeme`, branch `main`.
+2. Build command `npm run build`, output directory `dist`. La versione di Node la legge da `.node-version`.
+3. Environment variables (Production e Preview): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
+   Solo queste due: la chiave segreta non va mai su Cloudflare.
+4. Supabase → Authentication → URL Configuration: aggiungi `https://<progetto>.pages.dev/**` alle Redirect URLs
+   (e imposta il Site URL quando il dominio è definitivo).
+5. Analytics senza cookie (NFR-10): progetto Pages → Metrics → **Web Analytics** → Enable. Cloudflare inserisce lo
+   script da sé, senza cookie, quindi non serve il banner di consenso.
 
 `public/_redirects` fa servire `index.html` per ogni percorso (URL come `/meme/<slug>`).
+Ogni push su `main` ripubblica il sito; ogni altro branch ha un'anteprima.
+
+Criteri di accettazione sul sito pubblicato:
+
+```bash
+E2E_BASE_URL=https://<progetto>.pages.dev npm run e2e
+```
+
+## Osservabilità e costi
+
+- **Errori**: log di API, database e autenticazione in Supabase → Logs (sul piano gratuito restano 1 giorno).
+- **Visite**: Cloudflare Web Analytics, senza cookie.
+- **Costi (NFR-03)**: tutto nei piani gratuiti. Supabase Free (500 MB database, 1 GB storage, 2 progetti attivi; un
+  progetto senza traffico per 7 giorni va in pausa), Cloudflare Pages Free, Resend Free (3.000 email al mese).
+  Unico costo previsto: il dominio, circa 10 € l'anno.
+
+## Prestazioni e accessibilità
+
+- LCP misurato sulla build di produzione con rete "Slow 4G" e CPU rallentata 4×: 1,8–2,3 s su home e scheda (NFR-02 chiede < 2,5 s).
+- `e2e/quality.spec.ts` controlla WCAG 2.1 AA con axe e l'assenza di scroll orizzontale a 360 px su tutte le pagine,
+  comprese quelle riservate.

@@ -26,6 +26,11 @@ Riferimento: *Crmeme – Scheda requisiti MVP* (28/10/2026). Nessun codice appli
 - **Test end-to-end** già in `e2e/acceptance.spec.ts` dalla Fase 4; in Fase 6 si completano e si lanciano sul sito pubblicato.
 - **Segnalazioni:** l'invio (anche anonimo) passa da una funzione dedicata che restituisce il token di stato. Arriva in Fase 5; fino ad allora nessuno può inserire segnalazioni via API.
 
+### Fase 6
+- Le pagine secondarie (pipeline, caricamento, moderazione, profilo, legali, dashboard) si caricano solo quando servono; home e scheda sono nel bundle iniziale.
+- Nella pipeline la card si trascina col mouse; da tastiera si usa una maniglia separata (⠿), così link e pulsanti non stanno dentro un altro controllo interattivo.
+- I criteri di accettazione girano sul sito pubblicato collegato a `crmeme-dev`, l'unico progetto Supabase disponibile per ora.
+
 ## 1. Dubbi e contraddizioni
 
 ### A. Da decidere prima della Fase 2 (bloccanti)
