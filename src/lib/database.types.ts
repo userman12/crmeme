@@ -482,9 +482,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_sighting: {
+        Args: { p_meme: number; p_seen_on: string; p_url: string }
+        Returns: undefined
+      }
       compute_score: {
         Args: { m: Database["public"]["Tables"]["memes"]["Row"] }
         Returns: number
+      }
+      delete_my_account: { Args: never; Returns: undefined }
+      find_duplicate: {
+        Args: { p_sha256: string }
+        Returns: {
+          slug: string
+          status: Database["public"]["Enums"]["meme_status"]
+        }[]
       }
       is_admin: { Args: never; Returns: boolean }
       is_curator: { Args: never; Returns: boolean }
