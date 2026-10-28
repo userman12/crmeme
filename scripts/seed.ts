@@ -138,7 +138,7 @@ async function main() {
       parent_meme_id: i >= 5 && i < 10 ? memeIds[i - 5] : null, // varianti dei primi 5 template
       community_id: pick(communityIds),
       uploader_id: uploader,
-      first_seen_at: rand() < 0.5 ? daysAgo(5 + Math.floor(rand() * 200)).toISOString().slice(0, 10) : null,
+      first_seen_at: rand() < 0.5 ? new Date(createdAt.getTime() - rand() * 90 * 86_400_000).toISOString().slice(0, 10) : null,
       moderation_note: status === 'rejected' ? 'Duplicato di un formato già in archivio.' :
         status === 'removed' ? 'Rimosso a seguito di segnalazione per copyright.' : null,
       created_at: createdAt.toISOString(),
