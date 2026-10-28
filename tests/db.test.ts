@@ -213,3 +213,63 @@ describe('contributi (FR-11, FR-15, FR-24)', () => {
     expect((await admin.auth.admin.getUserById(leaving.id)).data.user).toBeNull()
   })
 })
+
+describe('segnalazioni e rimozione (FR-18–FR-21, CMP-03, CMP-06)', () => {
+  let reportedId: number
+  let token: string
+  let uploader: Awaited<ReturnType<typeof member>>
+
+  beforeAll(async () => {
+    uploader = await member('rep')  // l'utente principale ha già esaurito i 10 caricamenti del giorno
+    reportedId = (await insertMeme(uploader.client, 70)).id
+    await admin.from('memes').update({ status: 'approved' }).eq('id', reportedId)
+  })
+
+  it('un visitatore segnala e riceve un link di stato', async () => {
+    const { data, error } = await anon.rpc('submit_report', { p_meme: reportedId, p_reason: 'copyright', p_details: 'Opera di X', p_email: '' })
+    expect(error).toBeNull()
+    token = data ?? ''
+    const { data: s } = await anon.rpc('report_status', { p_token: token })
+    expect(s?.[0]).toMatchObject({ reason: 'copyright', status: 'open', resolution_note: null })
+    expect((await anon.from('reports').select('id')).data).toEqual([])  // le segnalazioni non sono pubbliche
+  })
+
+  it('un utente non curatore non può risolvere segnalazioni', async () => {
+    const { data: r } = await admin.from('reports').select('id').eq('status_token', token).single()
+    const { error } = await uploader.client.rpc('resolve_report', { p_report: r?.id ?? 0, p_remove: true, p_note: 'no' })
+    expect(error).not.toBeNull()
+  })
+
+  it('il curatore rimuove: la scheda risulta rimossa, chi segnala e chi ha caricato vedono il motivo', async () => {
+    const { data: r } = await admin.from('reports').select('id').eq('status_token', token).single()
+    expect((await curator.client.rpc('resolve_report', { p_report: r?.id ?? 0, p_remove: true, p_note: '' })).error?.message).toBe('note_required')
+    const { data: files, error } = await curator.client.rpc('resolve_report', { p_report: r?.id ?? 0, p_remove: true, p_note: 'Copyright di X' })
+    expect(error).toBeNull()
+    expect(files?.[0]?.image_path).toBe('test/x.png')
+
+    const { data: m } = await anon.from('memes').select('slug').eq('id', reportedId)
+    expect(m).toEqual([])
+    const { data: own } = await uploader.client.from('memes').select('slug, status, moderation_note').eq('id', reportedId).single()
+    expect(own).toMatchObject({ status: 'removed', moderation_note: 'Copyright di X' })
+    expect((await anon.rpc('meme_status', { p_slug: own?.slug ?? '' })).data).toBe('removed')
+    expect((await anon.rpc('report_status', { p_token: token })).data?.[0]).toMatchObject({ status: 'actioned', resolution_note: 'Copyright di X' })
+  })
+
+  it('massimo 20 segnalazioni anonime al giorno per meme', async () => {
+    const target = (await insertMeme(uploader.client, 71)).id
+    await admin.from('memes').update({ status: 'approved' }).eq('id', target)
+    await admin.from('reports').insert(Array.from({ length: 20 }, () => ({ meme_id: target, reason: 'spam' as const })))
+    const { error } = await anon.rpc('submit_report', { p_meme: target, p_reason: 'spam', p_details: '', p_email: '' })
+    expect(error?.message).toBe('rate_limit_reports')
+    // chi ha un account può ancora segnalare
+    expect((await curator.client.rpc('submit_report', { p_meme: target, p_reason: 'illegal', p_details: '', p_email: '' })).error).toBeNull()
+  })
+
+  it('export dei dati: solo i propri, mai per i visitatori', async () => {
+    const { data } = await user.client.rpc('export_my_data')
+    const json = data as { account: { email: string }; memes: unknown[] }
+    expect(json.account.email).toMatch(/^test_user_/)
+    expect(json.memes.length).toBeGreaterThan(0)
+    expect((await anon.rpc('export_my_data')).error).not.toBeNull()
+  })
+})
