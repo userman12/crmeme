@@ -23,7 +23,7 @@ export function StageBadge({ stage }: { stage: Stage }) {
 export const score = (n: number) => n.toFixed(2)
 
 /** Card per griglia e pipeline. NSFW sfocato (NFR-09). */
-export function MemeCard({ meme, compact }: { meme: Card; compact?: boolean }) {
+export function MemeCard({ meme, compact, eager }: { meme: Card; compact?: boolean; eager?: boolean }) {
   return (
     <Link
       to={`/meme/${meme.slug}`}
@@ -34,7 +34,8 @@ export function MemeCard({ meme, compact }: { meme: Card; compact?: boolean }) {
         <img
           src={imageUrl(meme.thumb_path)}
           alt={meme.is_nsfw ? t.meme.nsfw : meme.alt_text}
-          loading="lazy"
+          loading={eager ? 'eager' : 'lazy'}
+          fetchPriority={eager ? 'high' : undefined}
           draggable={false}
           width={400}
           height={300}

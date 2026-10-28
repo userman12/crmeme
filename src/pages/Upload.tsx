@@ -116,7 +116,7 @@ export function Upload() {
         <label className="block text-sm text-slate-700">{t.upload.titleField}
           <input name="title" required minLength={3} maxLength={120} className={field} />
         </label>
-        <label className="block text-sm text-slate-700">{t.upload.description} <span className="text-slate-400">{t.common.optional}</span>
+        <label className="block text-sm text-slate-700">{t.upload.description} <span className="text-slate-500">{t.common.optional}</span>
           <textarea name="description" maxLength={2000} rows={3} className={field} />
         </label>
         <label className="block text-sm text-slate-700">{t.upload.altText}
@@ -144,7 +144,7 @@ export function Upload() {
         </div>
 
         <fieldset>
-          <legend className="text-sm text-slate-700">{t.upload.tags} <span className="text-slate-400">{t.common.optional}</span></legend>
+          <legend className="text-sm text-slate-700">{t.upload.tags} <span className="text-slate-500">{t.common.optional}</span></legend>
           <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
             {tax.data.tags.map((x) => (
               <label key={x.id} className="flex items-center gap-1 text-sm">
@@ -155,11 +155,11 @@ export function Upload() {
         </fieldset>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="text-sm text-slate-700">{t.upload.parent} <span className="text-slate-400">{t.common.optional}</span>
+          <label className="text-sm text-slate-700">{t.upload.parent} <span className="text-slate-500">{t.common.optional}</span>
             <input name="parent" defaultValue={params.get('parent') ?? ''} aria-describedby="parent-hint" className={field} />
             <span id="parent-hint" className="mt-1 block text-xs text-slate-500">{t.upload.parentHint}</span>
           </label>
-          <label className="text-sm text-slate-700">{t.upload.firstSeen} <span className="text-slate-400">{t.common.optional}</span>
+          <label className="text-sm text-slate-700">{t.upload.firstSeen} <span className="text-slate-500">{t.common.optional}</span>
             <input name="first_seen_at" type="date" max={today} className={field} />
           </label>
         </div>

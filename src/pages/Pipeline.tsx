@@ -1,5 +1,5 @@
 // FR-05 kanban, FR-06 drag and drop per i curatori (solo verso lo stage successivo, A7), FR-07 lista per stage su mobile
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore, type KeyboardEventHandler, type PointerEventHandler } from 'react'
 import {
   DndContext, KeyboardSensor, PointerSensor, useDraggable, useDroppable, useSensor, useSensors,
   type Active, type Announcements, type Over,
@@ -21,9 +21,14 @@ const useWide = () => useSyncExternalStore(subscribe, () => matchMedia(wideQuery
 
 // Al rilascio il browser genera anche un clic sul link della card. dnd-kit ne ferma la propagazione sul
 // document, ma non la navigazione nativa del link: la blocchiamo su window, che viene prima.
-let lastDragEnd = 0
+// Il clic arriva nello stesso ciclo di eventi del rilascio, quindi il flag si azzera al ciclo successivo.
+let justDragged = false
+const endDrag = () => {
+  justDragged = true
+  setTimeout(() => { justDragged = false })
+}
 const swallowClickAfterDrag = (e: Event) => {
-  if (Date.now() - lastDragEnd < 300) e.preventDefault()
+  if (justDragged) e.preventDefault()
 }
 
 const cardOf = (a: Active | Over | null) => a?.data.current as Card | undefined
@@ -73,9 +78,9 @@ export function Pipeline() {
         sensors={sensors}
         accessibility={{ announcements, screenReaderInstructions: { draggable: t.dnd.instructions } }}
         onDragStart={({ active }) => setDragging(cardOf(active))}
-        onDragCancel={() => { lastDragEnd = Date.now(); setDragging(undefined) }}
+        onDragCancel={() => { endDrag(); setDragging(undefined) }}
         onDragEnd={({ active, over }) => {
-          lastDragEnd = Date.now()
+          endDrag()
           const card = cardOf(active)
           setDragging(undefined)
           if (!card || !over || over.id === card.stage) return
@@ -139,15 +144,25 @@ function PipelineCard({ meme, curator, draggable, onMove }: { meme: Card; curato
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: meme.id, data: meme, disabled: !draggable })
   const next = NEXT_STAGE[meme.stage]
   return (
-    <li ref={setNodeRef} {...(draggable ? { ...attributes, ...listeners } : {})}
+    // Col mouse si trascina tutta la card; da tastiera la maniglia, così link e pulsanti non finiscono
+    // dentro un altro controllo interattivo (WCAG, NFR-06)
+    <li ref={setNodeRef} onPointerDown={draggable ? (listeners?.onPointerDown as PointerEventHandler) : undefined}
       style={transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined}
-      className={`${isDragging ? 'relative z-10 shadow-lg' : ''} ${draggable ? 'cursor-grab touch-none rounded-md focus-visible:outline-2 focus-visible:outline-indigo-600' : ''}`}>
+      className={`${isDragging ? 'relative z-10 shadow-lg' : ''} ${draggable ? 'cursor-grab touch-none' : ''}`}>
       <MemeCard meme={meme} compact />
       {curator && (
-        <button onClick={() => onMove(meme, next)}
-          className="mt-1 w-full rounded border border-slate-300 bg-white py-0.5 text-xs font-medium hover:bg-slate-50">
-          {t.dnd.move(t.stage[next])}
-        </button>
+        <div className="mt-1 flex gap-1">
+          {draggable && (
+            <button {...attributes} onKeyDown={listeners?.onKeyDown as KeyboardEventHandler} aria-label={t.dnd.handle(meme.title)}
+              className="rounded border border-slate-300 bg-white px-1.5 text-xs text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-indigo-600">
+              <span aria-hidden>⠿</span>
+            </button>
+          )}
+          <button onClick={() => onMove(meme, next)}
+            className="flex-1 rounded border border-slate-300 bg-white py-0.5 text-xs font-medium hover:bg-slate-50">
+            {t.dnd.move(t.stage[next])}
+          </button>
+        </div>
       )}
     </li>
   )

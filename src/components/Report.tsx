@@ -45,11 +45,11 @@ export function ReportForm({ memeId }: { memeId: number }) {
             </select>
           </label>
           {reason === 'copyright' && <p className="text-xs text-slate-500">{t.report.copyrightHint}</p>}
-          <label className="block text-sm text-slate-700">{t.report.details} <span className="text-slate-400">{t.common.optional}</span>
+          <label className="block text-sm text-slate-700">{t.report.details} <span className="text-slate-500">{t.common.optional}</span>
             <textarea name="details" maxLength={2000} rows={3} className={field} />
           </label>
           {!session && (
-            <label className="block text-sm text-slate-700">{t.report.email} <span className="text-slate-400">{t.common.optional}</span>
+            <label className="block text-sm text-slate-700">{t.report.email} <span className="text-slate-500">{t.common.optional}</span>
               <input name="email" type="email" autoComplete="email" className={field} />
             </label>
           )}
