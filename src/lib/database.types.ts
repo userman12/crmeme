@@ -491,6 +491,7 @@ export type Database = {
         Returns: number
       }
       delete_my_account: { Args: never; Returns: undefined }
+      export_my_data: { Args: never; Returns: Json }
       find_duplicate: {
         Args: { p_sha256: string }
         Returns: {
@@ -501,6 +502,10 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_curator: { Args: never; Returns: boolean }
       is_member: { Args: never; Returns: boolean }
+      meme_status: {
+        Args: { p_slug: string }
+        Returns: Database["public"]["Enums"]["meme_status"]
+      }
       my_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
@@ -510,6 +515,32 @@ export type Database = {
         Returns: Database["public"]["Enums"]["stage"]
       }
       refresh_score: { Args: { p_meme: number }; Returns: undefined }
+      report_status: {
+        Args: { p_token: string }
+        Returns: {
+          created_at: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          resolution_note: string
+          resolved_at: string
+          status: Database["public"]["Enums"]["report_status"]
+        }[]
+      }
+      resolve_report: {
+        Args: { p_note: string; p_remove: boolean; p_report: number }
+        Returns: {
+          image_path: string
+          thumb_path: string
+        }[]
+      }
+      submit_report: {
+        Args: {
+          p_details: string
+          p_email: string
+          p_meme: number
+          p_reason: Database["public"]["Enums"]["report_reason"]
+        }
+        Returns: string
+      }
     }
     Enums: {
       activity_type:
