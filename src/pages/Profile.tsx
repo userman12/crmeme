@@ -32,6 +32,17 @@ export function Profile() {
   const approved = data.memes.filter((m) => m.status === 'approved')
   const others = data.memes.filter((m) => m.status !== 'approved')
 
+  // CMP-06: tutti i propri dati in un file JSON
+  async function exportData() {
+    const { data, error } = await supabase.rpc('export_my_data')
+    if (error) return setError(t.errors.generic)
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }))
+    a.download = `crmeme-${username}.json`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
   async function deleteAccount() {
     if (!confirm(t.profile.deleteConfirm)) return
     const { error } = await supabase.rpc('delete_my_account')
@@ -74,6 +85,7 @@ export function Profile() {
       {own && (
         <section className="mt-10 flex flex-wrap gap-3 border-t border-slate-200 pt-4">
           <button className={secondary} onClick={() => supabase.auth.signOut().then(() => navigate('/'))}>{t.profile.signOut}</button>
+          <button className={secondary} onClick={exportData}>{t.exportData}</button>
           <button className={`${secondary} text-rose-700`} onClick={deleteAccount}>{t.profile.deleteAccount}</button>
           <ErrorText>{error}</ErrorText>
         </section>

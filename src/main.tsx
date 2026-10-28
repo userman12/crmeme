@@ -6,6 +6,8 @@ import { Login, Welcome } from './pages/Account'
 import { Moderation } from './pages/Moderation'
 import { Profile } from './pages/Profile'
 import { Upload } from './pages/Upload'
+import { Legal } from './pages/Legal'
+import { ReportStatus } from './components/Report'
 import { Catalog } from './pages/Catalog'
 import { MemePage } from './pages/MemePage'
 import { Pipeline } from './pages/Pipeline'
@@ -52,7 +54,14 @@ function Layout() {
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6"><Outlet /></main>
-      <footer className="border-t border-slate-200 py-4 text-center text-xs text-slate-500">{t.app.name}</footer>
+      <footer className="border-t border-slate-200 py-4 text-xs text-slate-500">
+        <nav aria-label={t.footer.legal} className="mx-auto flex max-w-6xl flex-wrap justify-center gap-x-4 gap-y-1 px-4">
+          <span>{t.app.name}</span>
+          <Link to="/termini" className="underline">{t.footer.terms}</Link>
+          <Link to="/privacy" className="underline">{t.footer.privacy}</Link>
+          <Link to="/contatti" className="underline">{t.footer.contacts}</Link>
+        </nav>
+      </footer>
     </div>
   )
 }
@@ -73,6 +82,10 @@ createRoot(document.getElementById('root') as HTMLElement).render(
           <Route path="u/:username" element={<Profile />} />
           <Route path="carica" element={<RequireMember><Upload /></RequireMember>} />
           <Route path="moderazione" element={<RequireMember curator><Moderation /></RequireMember>} />
+          <Route path="termini" element={<Legal page="terms" />} />
+          <Route path="privacy" element={<Legal page="privacy" />} />
+          <Route path="contatti" element={<Legal page="contacts" />} />
+          <Route path="segnalazione/:token" element={<ReportStatus />} />
           <Route path="*" element={<Status empty={t.common.notFound} />} />
         </Route>
       </Routes>

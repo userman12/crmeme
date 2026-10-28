@@ -106,6 +106,9 @@ export const it = {
     not_found: 'Meme non trovato.',
     stage_transition_invalid: 'Questo spostamento di stage non è consentito.',
     generic: 'Operazione non riuscita. Riprova tra poco.',
+    rate_limit_reports: 'Questo meme ha ricevuto molte segnalazioni anonime oggi. Scrivici dalla pagina Contatti oppure accedi per segnalarlo.',
+    note_required: 'Scrivi la motivazione della decisione.',
+    forbidden: 'Operazione riservata ai curatori.',
   } as Record<string, string>,
   nav2: {
     signIn: 'Accedi',
@@ -217,6 +220,139 @@ export const it = {
     accept: 'Accetta',
     refuse: 'Rifiuta',
     forbidden: 'Questa pagina è riservata ai curatori.',
+    reports: (n: number) => `Segnalazioni aperte (${n})`,
+    emptyReports: 'Nessuna segnalazione aperta.',
+    anonymous: 'anonimo',
+    decision: 'Motivazione della decisione',
+    decisionHint: 'Obbligatoria. Se rimuovi il contenuto, la vedono chi ha caricato e chi ha segnalato.',
+    remove: 'Rimuovi contenuto',
+    dismiss: 'Archivia segnalazione',
+    priority: 'Priorità',
+  },
+  report: {
+    open: 'Segnala',
+    title: 'Segnala questo contenuto',
+    intro: 'Le segnalazioni vengono esaminate da un curatore. Non serve un account.',
+    reason: 'Motivo',
+    reasons: {
+      copyright: 'Violazione del diritto d’autore',
+      illegal: 'Contenuto illegale',
+      nsfw: 'Contenuto sessuale o violento non segnalato',
+      harassment: 'Molestie o contenuto offensivo verso una persona',
+      spam: 'Spam o pubblicità',
+      other: 'Altro',
+    } as Record<string, string>,
+    copyrightHint: 'Indica l’opera originale e chi ne detiene i diritti: la rimozione per copyright è trattata con priorità.',
+    details: 'Dettagli',
+    email: 'Email per essere ricontattato',
+    submit: 'Invia segnalazione',
+    done: 'Segnalazione ricevuta. Conserva questo link per seguire l’esito:',
+    statusTitle: 'Stato della segnalazione',
+    statusNotFound: 'Segnalazione non trovata. Controlla di aver copiato il link per intero.',
+    sentOn: 'Inviata il',
+    resolvedOn: 'Decisa il',
+    state: 'Stato',
+    states: { open: 'In esame', actioned: 'Contenuto rimosso', dismissed: 'Archiviata: contenuto non rimosso' } as Record<string, string>,
+    note: 'Motivazione',
+  },
+  removed: {
+    title: 'Contenuto rimosso',
+    body: 'Questo meme è stato rimosso a seguito di una segnalazione.',
+    yourNote: (note: string) => `Motivo comunicato a chi l’ha caricato: ${note}`,
+  },
+  dnd: {
+    move: (to: string) => `Sposta a ${to}`,
+    dragHint: 'Trascina una card nella colonna successiva, oppure usa il pulsante “Sposta a”.',
+    instructions: 'Premi spazio o invio per prendere la card, le frecce per spostarla, spazio o invio per lasciarla, Esc per annullare.',
+    picked: (title: string) => `Hai preso ${title}.`,
+    over: (title: string, stage: string) => `${title} è sopra la colonna ${stage}.`,
+    dropped: (title: string, stage: string) => `${title} lasciato su ${stage}.`,
+    cancelled: (title: string) => `Spostamento di ${title} annullato.`,
+    invalid: 'Si può spostare solo nello stage successivo.',
+  },
+  footer: {
+    terms: 'Termini d’uso',
+    privacy: 'Privacy',
+    contacts: 'Contatti',
+    legal: 'Link legali',
+  },
+  exportData: 'Scarica i miei dati',
+  legal: {
+    // A11: da sostituire prima del lancio
+    owner: '[NOME E COGNOME DEL TITOLARE]',
+    email: '[EMAIL DI CONTATTO]',
+    updated: '28 ottobre 2026',
+    draft: 'Bozza da far verificare a un legale prima della pubblicazione.',
+    lastUpdate: (d: string) => `Ultimo aggiornamento: ${d}`,
+  },
+}
+
+type Section = { h: string; p: string[] }
+const { owner, email } = it.legal
+
+// CMP-01, CMP-02, CMP-04: testi in bozza, da far verificare a un legale
+export const legalPages: Record<'terms' | 'privacy' | 'contacts', { title: string; sections: Section[] }> = {
+  terms: {
+    title: 'Termini d’uso',
+    sections: [
+      { h: 'Cos’è Crmeme', p: [`Crmeme è un progetto personale e parodistico gestito da ${owner}: un catalogo di meme presentato come un CRM aziendale. Usando il sito accetti questi termini.`] },
+      { h: 'Account', p: ['Per votare, caricare e proporre cambi di stage serve un account, creato con la tua email. Sei responsabile di ciò che pubblichi con il tuo account. Puoi eliminarlo in qualsiasi momento dal tuo profilo.'] },
+      { h: 'Contenuti ammessi', p: ['Immagini statiche o GIF di meme, con titolo, descrizione e testo alternativo pertinenti. Devi avere il diritto di condividere ciò che carichi, ad esempio perché è un meme già diffuso pubblicamente o perché l’hai creato tu.'] },
+      { h: 'Contenuti vietati', p: [
+        'Contenuti illegali secondo la legge italiana o europea, compresi materiale pedopornografico, incitamento all’odio o alla violenza e apologia di reato.',
+        'Contenuti che violano diritti d’autore o di marchio di terzi senza autorizzazione.',
+        'Molestie, minacce o contenuti che prendono di mira persone private; dati personali altrui (doxxing).',
+        'Pornografia; contenuti violenti espliciti.',
+        'Spam, pubblicità, link malevoli.',
+      ] },
+      { h: 'Moderazione', p: ['Ogni caricamento viene esaminato da un curatore prima della pubblicazione. I curatori possono modificare i metadati, rifiutare o rimuovere i contenuti e decidono lo stage di ogni meme. Le decisioni di rifiuto o rimozione sono motivate a chi ha caricato, nel suo profilo.'] },
+      { h: 'Segnalazioni', p: ['Chiunque, anche senza account, può segnalare un contenuto con il pulsante “Segnala” presente su ogni scheda. Chi segnala riceve un link per seguire l’esito e la motivazione della decisione. Per le segnalazioni di violazione del diritto d’autore indica l’opera originale e il titolare dei diritti.'] },
+      { h: 'Licenza sui contenuti caricati', p: ['Caricando un contenuto concedi a Crmeme il permesso non esclusivo e gratuito di mostrarlo sul sito. Il permesso termina quando il contenuto viene rimosso. Se elimini l’account, i meme caricati restano pubblicati e attribuiti a “utente eliminato”.'] },
+      { h: 'Limiti', p: ['Per prevenire abusi valgono questi limiti: 10 caricamenti al giorno e 60 voti all’ora per utente.'] },
+      { h: 'Responsabilità', p: ['Il sito è offerto così com’è, senza garanzie di disponibilità. Le opinioni espresse nei meme sono di chi li ha creati o caricati.'] },
+      { h: 'Modifiche', p: ['Questi termini possono cambiare; la data dell’ultimo aggiornamento è indicata in fondo alla pagina.'] },
+      { h: 'Contatti', p: [`Per qualsiasi questione scrivi a ${email}.`] },
+    ],
+  },
+  privacy: {
+    title: 'Privacy policy',
+    sections: [
+      { h: 'Titolare del trattamento', p: [`${owner}, contattabile all’indirizzo ${email}.`] },
+      { h: 'Dati raccolti', p: [
+        'Account: indirizzo email, username, data di registrazione e di accettazione dei termini.',
+        'Contenuti e attività: meme caricati, voti, proposte di cambio stage, avvistamenti, segnalazioni inviate.',
+        'Segnalazioni anonime: il testo della segnalazione e, solo se la indichi, la tua email.',
+        'Dati tecnici: log di accesso e di errore conservati dai fornitori dell’infrastruttura.',
+      ] },
+      { h: 'Finalità e basi giuridiche', p: [
+        'Fornire il servizio e gestire il tuo account (esecuzione del contratto, art. 6.1.b GDPR).',
+        'Moderare i contenuti, gestire le segnalazioni e prevenire abusi (obbligo di legge e legittimo interesse, art. 6.1.c e 6.1.f).',
+        'Statistiche di visita aggregate e senza cookie (legittimo interesse).',
+      ] },
+      { h: 'Fornitori', p: [
+        'Supabase (database, autenticazione e archiviazione immagini), con server nell’Unione Europea (Francoforte).',
+        'Cloudflare (hosting del sito e statistiche di visita senza cookie).',
+        'Resend (invio delle email di accesso).',
+      ] },
+      { h: 'Cookie e archiviazione locale', p: ['Il sito non usa cookie di profilazione né di terze parti. Il browser conserva solo i dati tecnici necessari a mantenerti connesso; per questo non serve un banner di consenso.'] },
+      { h: 'Conservazione', p: ['I dati dell’account restano finché non elimini l’account. Alla cancellazione eliminiamo email, profilo e voti; i meme caricati restano pubblicati senza riferimento a te. Le segnalazioni e le relative decisioni sono conservate per documentare la moderazione.'] },
+      { h: 'I tuoi diritti', p: [
+        'Puoi accedere ai tuoi dati e scaricarli in formato JSON dal tuo profilo (“Scarica i miei dati”), ed eliminare l’account dallo stesso profilo.',
+        `Per rettifica, limitazione, opposizione o qualsiasi altra richiesta scrivi a ${email}.`,
+        'Hai diritto di proporre reclamo al Garante per la protezione dei dati personali (garanteprivacy.it).',
+      ] },
+    ],
+  },
+  contacts: {
+    title: 'Contatti',
+    sections: [
+      { h: 'Punto di contatto unico', p: [
+        `Per utenti e autorità il punto di contatto unico è ${email} (gestito da ${owner}).`,
+        'Puoi scriverci in italiano o in inglese.',
+      ] },
+      { h: 'Segnalare un contenuto', p: ['Il modo più rapido è il pulsante “Segnala” presente su ogni scheda meme: funziona anche senza account e ti dà un link per seguire l’esito. Per le richieste di rimozione per copyright indica l’opera originale e il titolare dei diritti.'] },
+      { h: 'Autorità', p: [`Le autorità che devono trasmettere ordini o richieste di informazioni possono usare lo stesso indirizzo, ${email}, indicando “Autorità” nell’oggetto.`] },
+    ],
   },
 }
 
