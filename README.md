@@ -36,11 +36,23 @@ Valori di `.env.local` (Dashboard Supabase → Project Settings → API Keys):
 | `npm run build` | typecheck + build statica in `dist/` |
 | `npm run lint` | ESLint |
 | `npm test` | test su permessi, score, limiti e storage contro il progetto di sviluppo |
+| `npm run e2e` | criteri di accettazione in un browser vero (Playwright). Avvia da solo il server locale; con `E2E_BASE_URL=https://…` gira sul sito pubblicato |
 | `npm run db:push` | applica le nuove migrazioni |
 | `npm run db:types` | rigenera `src/lib/database.types.ts` dopo una migrazione |
 | `npm run seed` | popola il progetto di sviluppo (salta se ci sono già meme) |
 
 I test creano utenti temporanei, li cancellano alla fine e non vanno lanciati sul progetto di produzione.
+Per accedere non usano email reali: il magic link lo genera l'API admin di Supabase.
+La prima volta serve `npx playwright install chromium`.
+
+## Accesso (magic link)
+
+In sviluppo basta il servizio email incluso in Supabase, che però consegna solo agli indirizzi dei membri
+del progetto e poche email l'ora. Per il sito pubblico (decisione A3):
+
+1. Dominio proprio + account Resend (piano gratuito), con il dominio verificato.
+2. Supabase → Authentication → Emails → SMTP Settings: host `smtp.resend.com`, porta 465, utente `resend`, password = API key di Resend.
+3. Supabase → Authentication → URL Configuration: Site URL = dominio pubblico, Redirect URLs = `https://<dominio>/**`.
 
 ## Ruoli
 

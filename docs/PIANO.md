@@ -22,6 +22,8 @@ Riferimento: *Crmeme – Scheda requisiti MVP* (28/10/2026). Nessun codice appli
 ### Scostamenti emersi in Fase 2
 - **Un solo progetto Supabase per ora.** Il piano gratuito ammette 2 progetti attivi e WatchNext ne occupa già uno. `crmeme-dev` serve per sviluppo e test; per la produzione bisogna mettere in pausa WatchNext o passare a un piano a pagamento. Da decidere prima del lancio.
 - **B17: Vitest al posto di pgTAP.** `supabase test db` richiede Docker. I test di permessi e score sono in Vitest (`tests/db.test.ts`) e chiamano l'API pubblica come farebbe un attaccante, che è anche ciò che chiede il criterio di accettazione.
+- **Compressione immagini con le API native del browser** (`createImageBitmap` + canvas) al posto di `browser-image-compression`: stesso risultato (lato lungo 1600 px, miniatura 400 px, EXIF rimosso), una dipendenza in meno. Output WebP, o JPEG su Safari che non codifica WebP.
+- **Test end-to-end** già in `e2e/acceptance.spec.ts` dalla Fase 4; in Fase 6 si completano e si lanciano sul sito pubblicato.
 - **Segnalazioni:** l'invio (anche anonimo) passa da una funzione dedicata che restituisce il token di stato. Arriva in Fase 5; fino ad allora nessuno può inserire segnalazioni via API.
 
 ## 1. Dubbi e contraddizioni
