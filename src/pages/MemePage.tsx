@@ -3,7 +3,9 @@ import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { supabase } from '../lib/supabase'
 import { CARD, formatDate, imageUrl, must, useData, useTitle, type Card, type Stage } from '../lib/data'
-import { MemeCard, StageBadge, Status, score } from '../components/ui'
+import { useAuth } from '../lib/auth'
+import { MemeCard, StageBadge, Status } from '../components/ui'
+import { AddSighting, SuggestStage, VoteBox } from '../components/MemeActions'
 import { t } from '../locales/it'
 
 type Payload = { from?: Stage; to?: Stage; up?: number; url?: string; seen_on?: string }
@@ -11,7 +13,8 @@ type Payload = { from?: Stage; to?: Stage; up?: number; url?: string; seen_on?: 
 export function MemePage() {
   const { slug = '' } = useParams()
   const [showNsfw, setShowNsfw] = useState(false)
-  const { data, loading, error } = useData(async () => {
+  const { session } = useAuth()
+  const query = useData(async () => {
     const r = await supabase.from('memes')
       .select('*, communities(name, slug), tags(name, slug), uploader:profiles!memes_uploader_id_fkey(username)')
       .eq('slug', slug).maybeSingle()
@@ -26,18 +29,18 @@ export function MemePage() {
     ])
     return { m, parent: parent?.data, variants: must(variants) as Card[], activities: must(activities) }
   }, [slug])
+  // dopo un voto o un avvistamento si ricarica senza svuotare la pagina
+  const data = query.data !== undefined ? query.data : query.last?.m.slug === slug ? query.last : undefined
   useTitle(data?.m.title)
 
-  if (error) return <Status error />
-  if (loading) return <Status loading />
+  if (query.error) return <Status error />
+  if (data === undefined) return <Status loading />
   if (!data) return <Status empty={t.meme.notFound} />
   const { m, parent, variants, activities } = data
   const hidden = m.is_nsfw && !showNsfw
 
   const rows: [string, ReactNode][] = [
     [t.meme.stage, <StageBadge stage={m.stage} />],
-    [t.meme.score, <span className="tabular-nums">{score(m.score)}</span>],
-    [t.meme.votes, `${t.meme.up(m.up_votes)} · ${t.meme.down(m.down_votes)}`],
     [t.meme.community, m.communities ? <Link className="underline" to={`/community/${m.communities.slug}`}>{m.communities.name}</Link> : '—'],
     [t.meme.tags, m.tags.length ? (
       <span className="flex flex-wrap gap-1">
@@ -53,7 +56,7 @@ export function MemePage() {
   return (
     <article>
       <div className="grid gap-6 md:grid-cols-[3fr_2fr]">
-        <div className="relative overflow-hidden rounded-md border border-slate-200 bg-slate-100">
+        <div className="relative self-start overflow-hidden rounded-md border border-slate-200 bg-slate-100">
           <img src={imageUrl(m.image_path)} alt={hidden ? t.meme.nsfw : m.alt_text} fetchPriority="high"
             className={`mx-auto max-h-[70vh] w-auto object-contain ${hidden ? 'scale-110 blur-2xl' : ''}`} />
           {hidden && (
@@ -64,6 +67,12 @@ export function MemePage() {
           )}
         </div>
         <div>
+          {m.status !== 'approved' && (
+            <p role="status" className="mb-3 rounded bg-amber-50 p-3 text-sm text-amber-900">
+              {m.status === 'pending' ? t.memeStatus.pending
+                : m.status === 'rejected' ? t.memeStatus.rejected(m.moderation_note ?? '') : t.memeStatus.removed(m.moderation_note ?? '')}
+            </p>
+          )}
           <h1 className="text-2xl font-semibold text-slate-900">{m.title}</h1>
           {m.description && <p className="mt-2 whitespace-pre-line text-slate-700">{m.description}</p>}
           <dl className="mt-4 divide-y divide-slate-200 rounded-md border border-slate-200 bg-white text-sm">
@@ -79,6 +88,22 @@ export function MemePage() {
               </div>
             )}
           </dl>
+          {m.status === 'approved' && (
+            <>
+              <VoteBox meme={m} onChange={query.reload} />
+              {session ? (
+                <div className="mt-3 space-y-3">
+                  <SuggestStage key={m.stage} meme={m} />
+                  <AddSighting meme={m} onAdded={query.reload} />
+                  <Link to={`/carica?parent=${m.slug}`} className="inline-block text-sm underline">{t.upload.uploadVariant}</Link>
+                </div>
+              ) : (
+                <Link to={`/accedi?next=${encodeURIComponent(`/meme/${m.slug}`)}`} className="mt-3 inline-block text-sm underline">
+                  {t.common.signInToContribute}
+                </Link>
+              )}
+            </>
+          )}
         </div>
       </div>
 
