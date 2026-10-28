@@ -6,6 +6,7 @@ import { CARD, formatDate, imageUrl, must, useData, useTitle, type Card, type St
 import { useAuth } from '../lib/auth'
 import { MemeCard, StageBadge, Status } from '../components/ui'
 import { AddSighting, SuggestStage, VoteBox } from '../components/MemeActions'
+import { ReportForm } from '../components/Report'
 import { t } from '../locales/it'
 
 type Payload = { from?: Stage; to?: Stage; up?: number; url?: string; seen_on?: string }
@@ -20,7 +21,11 @@ export function MemePage() {
       .eq('slug', slug).maybeSingle()
     if (r.error) throw r.error
     const m = r.data
-    if (!m) return null
+    if (!m) {
+      // FR-20: un meme rimosso non è leggibile, ma lo stato sì
+      const { data: status } = await supabase.rpc('meme_status', { p_slug: slug })
+      return status === 'removed' ? 'removed' as const : null
+    }
     const [parent, variants, activities] = await Promise.all([
       m.parent_meme_id ? supabase.from('memes').select('slug, title').eq('id', m.parent_meme_id).maybeSingle() : null,
       supabase.from('memes').select(CARD).eq('parent_meme_id', m.id).eq('status', 'approved').order('score', { ascending: false }),
@@ -30,12 +35,26 @@ export function MemePage() {
     return { m, parent: parent?.data, variants: must(variants) as Card[], activities: must(activities) }
   }, [slug])
   // dopo un voto o un avvistamento si ricarica senza svuotare la pagina
-  const data = query.data !== undefined ? query.data : query.last?.m.slug === slug ? query.last : undefined
-  useTitle(data?.m.title)
+  const last = typeof query.last === 'object' && query.last?.m.slug === slug ? query.last : undefined
+  const data = query.data !== undefined ? query.data : last
+  const removed = data === 'removed' || (typeof data === 'object' && data?.m.status === 'removed')
+  useTitle(removed ? t.removed.title : typeof data === 'object' ? data?.m.title : undefined)
 
   if (query.error) return <Status error />
   if (data === undefined) return <Status loading />
   if (!data) return <Status empty={t.meme.notFound} />
+  if (removed) {
+    // chi l'ha caricato vede anche il motivo (FR-21)
+    const note = typeof data === 'object' ? data.m.moderation_note : null
+    return (
+      <section className="mx-auto max-w-xl rounded-md border border-slate-200 bg-white p-6 text-center">
+        <h1 className="text-xl font-semibold">{t.removed.title}</h1>
+        <p className="mt-2 text-slate-700">{t.removed.body}</p>
+        {note && <p className="mt-3 text-sm text-slate-600">{t.removed.yourNote(note)}</p>}
+        <Link to="/" className="mt-4 inline-block text-sm underline">{t.common.home}</Link>
+      </section>
+    )
+  }
   const { m, parent, variants, activities } = data
   const hidden = m.is_nsfw && !showNsfw
 
@@ -69,8 +88,7 @@ export function MemePage() {
         <div>
           {m.status !== 'approved' && (
             <p role="status" className="mb-3 rounded bg-amber-50 p-3 text-sm text-amber-900">
-              {m.status === 'pending' ? t.memeStatus.pending
-                : m.status === 'rejected' ? t.memeStatus.rejected(m.moderation_note ?? '') : t.memeStatus.removed(m.moderation_note ?? '')}
+              {m.status === 'pending' ? t.memeStatus.pending : t.memeStatus.rejected(m.moderation_note ?? '')}
             </p>
           )}
           <h1 className="text-2xl font-semibold text-slate-900">{m.title}</h1>
@@ -91,6 +109,7 @@ export function MemePage() {
           {m.status === 'approved' && (
             <>
               <VoteBox meme={m} onChange={query.reload} />
+              <div className="mt-3"><ReportForm memeId={m.id} /></div>
               {session ? (
                 <div className="mt-3 space-y-3">
                   <SuggestStage key={m.stage} meme={m} />
