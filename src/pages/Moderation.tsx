@@ -9,16 +9,21 @@ import { t } from '../locales/it'
 export function Moderation() {
   useTitle(t.moderation.title)
   const queue = useData(async () => {
-    const [memes, suggestions, tax] = await Promise.all([
+    const [memes, suggestions, reports, tax] = await Promise.all([
       supabase.from('memes')
         .select('*, meme_tags(tag_id), uploader:profiles!memes_uploader_id_fkey(username), parent:parent_meme_id(slug, title)')
         .eq('status', 'pending').order('created_at'),
       supabase.from('stage_suggestions')
         .select('id, from_stage, to_stage, reason, created_at, memes(slug, title), author:profiles!stage_suggestions_user_id_fkey(username)')
         .eq('status', 'open').order('created_at'),
+      supabase.from('reports')
+        .select('id, reason, details, reporter_email, created_at, memes(slug, title), reporter:profiles!reports_reporter_id_fkey(username)')
+        .eq('status', 'open').order('created_at'),
       loadTaxonomy(),
     ])
-    return { memes: must(memes), suggestions: must(suggestions), tax }
+    // CMP-05: copyright e contenuti illegali in cima alla coda
+    const urgent = (r: { reason: string }) => (r.reason === 'copyright' || r.reason === 'illegal' ? 0 : 1)
+    return { memes: must(memes), suggestions: must(suggestions), reports: must(reports).sort((a, b) => urgent(a) - urgent(b)), tax }
   }, [])
 
   if (queue.error) return <Status error />
@@ -30,6 +35,15 @@ export function Moderation() {
       <h1 className="text-2xl font-semibold">{t.moderation.title}</h1>
 
       <section className="mt-6">
+        <h2 className="text-lg font-semibold">{t.moderation.reports(data.reports.length)}</h2>
+        {data.reports.length === 0 ? <Status empty={t.moderation.emptyReports} /> : (
+          <ul className="mt-3 space-y-3">
+            {data.reports.map((r) => <li key={r.id}><ReportItem r={r} done={queue.reload} /></li>)}
+          </ul>
+        )}
+      </section>
+
+      <section className="mt-10">
         <h2 className="text-lg font-semibold">{t.moderation.uploads(data.memes.length)}</h2>
         {data.memes.length === 0 ? <Status empty={t.moderation.emptyUploads} /> : (
           <ul className="mt-3 space-y-4">
@@ -190,5 +204,59 @@ function Suggestion({ s, done }: { s: SuggestionRow; done: () => void }) {
       <button disabled={busy} onClick={() => review('accepted')} className={primary}>{t.moderation.accept}</button>
       <button disabled={busy} onClick={() => review('rejected')} className={secondary}>{t.moderation.refuse}</button>
     </div>
+  )
+}
+
+type ReportRow = {
+  id: number; reason: string; details: string; reporter_email: string | null; created_at: string
+  memes: { slug: string; title: string } | null; reporter: { username: string } | null
+}
+
+// FR-19: rimuovi il contenuto o archivia la segnalazione, sempre con una nota
+function ReportItem({ r, done }: { r: ReportRow; done: () => void }) {
+  const [error, setError] = useState<string>()
+  const [busy, setBusy] = useState(false)
+  const id = `r${r.id}`
+
+  async function act(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const remove = (e.nativeEvent as SubmitEvent).submitter?.getAttribute('value') === 'remove'
+    setBusy(true)
+    const { data, error } = await supabase.rpc('resolve_report', {
+      p_report: r.id, p_remove: remove, p_note: String(new FormData(e.currentTarget).get('note') ?? ''),
+    })
+    if (error) {
+      setBusy(false)
+      return setError(errorText(error))
+    }
+    // B5: il file non deve restare raggiungibile dal bucket pubblico
+    const files = (data ?? []).flatMap((f) => [f.image_path, f.thumb_path])
+    if (files.length) await supabase.storage.from('memes').remove(files)
+    done()
+  }
+
+  const urgent = r.reason === 'copyright' || r.reason === 'illegal'
+  return (
+    <form onSubmit={act} aria-labelledby={id} className="rounded-md border border-slate-200 bg-white p-4 text-sm">
+      <p id={id} className="flex flex-wrap items-center gap-2">
+        <span className={`rounded px-2 py-0.5 text-xs font-medium ${urgent ? 'bg-rose-100 text-rose-900' : 'bg-slate-100 text-slate-800'}`}>
+          {t.report.reasons[r.reason]}
+        </span>
+        {r.memes && <Link className="font-medium underline" to={`/meme/${r.memes.slug}`}>{r.memes.title}</Link>}
+      </p>
+      {r.details && <p className="mt-2 whitespace-pre-line text-slate-700">{r.details}</p>}
+      <p className="mt-2 text-xs text-slate-500">
+        {t.moderation.by(r.reporter?.username ?? r.reporter_email ?? t.moderation.anonymous, formatDate(r.created_at))}
+      </p>
+      <label className="mt-3 block text-slate-700">{t.moderation.decision}
+        <textarea name="note" required maxLength={1000} rows={2} aria-describedby={`${id}-hint`} className={field} />
+        <span id={`${id}-hint`} className="mt-1 block text-xs text-slate-500">{t.moderation.decisionHint}</span>
+      </label>
+      <ErrorText>{error}</ErrorText>
+      <div className="mt-3 flex flex-wrap gap-3">
+        <button name="action" value="remove" disabled={busy} className={`${primary} bg-rose-700 hover:bg-rose-600`}>{t.moderation.remove}</button>
+        <button name="action" value="dismiss" disabled={busy} className={secondary}>{t.moderation.dismiss}</button>
+      </div>
+    </form>
   )
 }
