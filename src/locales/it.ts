@@ -4,7 +4,11 @@ import type { Database } from '../lib/database.types'
 type Enums = Database['public']['Enums']
 
 export const it = {
-  app: { name: 'Crmeme', tagline: 'Il CRM per i meme' },
+  app: {
+    name: 'Crmeme',
+    tagline: 'Il CRM per i meme',
+    description: 'Crmeme gestisce i meme come lead di un CRM: schede, pipeline del ciclo di vita, Meme Score e voti.',
+  },
   nav: {
     catalog: 'Catalogo',
     pipeline: 'Pipeline',
@@ -262,6 +266,7 @@ export const it = {
   },
   dnd: {
     move: (to: string) => `Sposta a ${to}`,
+    handle: (title: string) => `Trascina ${title}`,
     dragHint: 'Trascina una card nella colonna successiva, oppure usa il pulsante “Sposta a”.',
     instructions: 'Premi spazio o invio per prendere la card, le frecce per spostarla, spazio o invio per lasciarla, Esc per annullare.',
     picked: (title: string) => `Hai preso ${title}.`,
@@ -277,6 +282,21 @@ export const it = {
     legal: 'Link legali',
   },
   exportData: 'Scarica i miei dati',
+  dashboard: {
+    nav: 'Dashboard',
+    title: 'Dashboard',
+    intro: 'Andamento del portafoglio meme, aggiornato a ogni voto e spostamento.',
+    perStage: 'Meme per stage',
+    perStageCount: (stage: string, n: number) => `${stage}: ${n} meme`,
+    top: 'Top 10 per Meme Score',
+    risen: 'Saliti di stage negli ultimi 30 giorni',
+    risenCount: (n: number) => (n === 1 ? '1 meme' : `${n} meme`),
+    avg: 'Tempo medio da Avvistato a Mainstream',
+    avgValue: (d: number) => `${d.toLocaleString('it-IT')} giorni`,
+    avgBase: (n: number) => `calcolato su ${n} meme`,
+    none: 'Nessun dato.',
+    move: (from: string, to: string) => `${from} → ${to}`,
+  },
   legal: {
     // A11: da sostituire prima del lancio
     owner: '[NOME E COGNOME DEL TITOLARE]',

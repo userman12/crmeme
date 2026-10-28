@@ -1,16 +1,22 @@
-import { StrictMode, type FormEvent } from 'react'
+import { StrictMode, Suspense, lazy, type ComponentType, type FormEvent } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Link, Navigate, NavLink, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router'
 import { AuthProvider, RequireMember, isCurator, useAuth } from './lib/auth'
-import { Login, Welcome } from './pages/Account'
-import { Moderation } from './pages/Moderation'
-import { Profile } from './pages/Profile'
-import { Upload } from './pages/Upload'
-import { Legal } from './pages/Legal'
-import { ReportStatus } from './components/Report'
 import { Catalog } from './pages/Catalog'
 import { MemePage } from './pages/MemePage'
-import { Pipeline } from './pages/Pipeline'
+
+// NFR-02: home e scheda nel bundle iniziale, il resto si carica quando serve
+const page = <K extends string>(load: () => Promise<Record<K, ComponentType<never>>>, name: K) =>
+  lazy(() => load().then((m) => ({ default: m[name] as ComponentType })))
+const Login = page(() => import('./pages/Account'), 'Login')
+const Welcome = page(() => import('./pages/Account'), 'Welcome')
+const Moderation = page(() => import('./pages/Moderation'), 'Moderation')
+const Profile = page(() => import('./pages/Profile'), 'Profile')
+const Upload = page(() => import('./pages/Upload'), 'Upload')
+const Pipeline = page(() => import('./pages/Pipeline'), 'Pipeline')
+const Dashboard = page(() => import('./pages/Dashboard'), 'Dashboard')
+const ReportStatus = page(() => import('./components/Report'), 'ReportStatus')
+const Legal = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Legal })))
 import { Status } from './components/ui'
 import { t } from './locales/it'
 import './index.css'
@@ -37,14 +43,15 @@ function Layout() {
           <Link to="/" className="font-semibold tracking-tight">
             {t.app.name} <span className="font-normal text-slate-400">· {t.app.tagline}</span>
           </Link>
-          <nav aria-label={t.nav.main} className="flex gap-1 text-sm">
+          <nav aria-label={t.nav.main} className="flex flex-wrap gap-1 text-sm">
             <NavLink to="/" end className={nav}>{t.nav.catalog}</NavLink>
             <NavLink to="/pipeline" className={nav}>{t.nav.pipeline}</NavLink>
+            <NavLink to="/dashboard" className={nav}>{t.dashboard.nav}</NavLink>
             {profile && <NavLink to="/carica" className={nav}>{t.nav2.upload}</NavLink>}
             {isCurator(profile) && <NavLink to="/moderazione" className={nav}>{t.nav2.moderation}</NavLink>}
           </nav>
           <div className="ml-auto text-sm">
-            {profile ? <NavLink to={`/u/${profile.username}`} aria-label={t.nav2.account} className={nav}>{profile.username}</NavLink>
+            {profile ? <NavLink to={`/u/${profile.username}`} aria-label={`${t.nav2.account}: ${profile.username}`} className={nav}>{profile.username}</NavLink>
               : session === null && <NavLink to={`/accedi?next=${encodeURIComponent(pathname + query)}`} className={nav}>{t.nav2.signIn}</NavLink>}
           </div>
           <form role="search" onSubmit={search} className="w-full sm:w-64">
@@ -53,7 +60,9 @@ function Layout() {
           </form>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6"><Outlet /></main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+        <Suspense fallback={<Status loading />}><Outlet /></Suspense>
+      </main>
       <footer className="border-t border-slate-200 py-4 text-xs text-slate-500">
         <nav aria-label={t.footer.legal} className="mx-auto flex max-w-6xl flex-wrap justify-center gap-x-4 gap-y-1 px-4">
           <span>{t.app.name}</span>
@@ -77,6 +86,7 @@ createRoot(document.getElementById('root') as HTMLElement).render(
           <Route path="tag/:tag" element={<Catalog />} />
           <Route path="meme/:slug" element={<MemePage />} />
           <Route path="pipeline" element={<Pipeline />} />
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="accedi" element={<Login />} />
           <Route path="benvenuto" element={<Welcome />} />
           <Route path="u/:username" element={<Profile />} />
