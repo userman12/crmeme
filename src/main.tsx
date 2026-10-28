@@ -1,6 +1,11 @@
 import { StrictMode, type FormEvent } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Link, NavLink, Outlet, Route, Routes, useNavigate } from 'react-router'
+import { BrowserRouter, Link, Navigate, NavLink, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router'
+import { AuthProvider, RequireMember, isCurator, useAuth } from './lib/auth'
+import { Login, Welcome } from './pages/Account'
+import { Moderation } from './pages/Moderation'
+import { Profile } from './pages/Profile'
+import { Upload } from './pages/Upload'
 import { Catalog } from './pages/Catalog'
 import { MemePage } from './pages/MemePage'
 import { Pipeline } from './pages/Pipeline'
@@ -10,12 +15,19 @@ import './index.css'
 
 function Layout() {
   const navigate = useNavigate()
+  const { session, profile } = useAuth()
+  const { pathname, search: query } = useLocation()
   const search = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const q = new FormData(e.currentTarget).get('q')
     navigate(q ? `/?q=${encodeURIComponent(String(q))}` : '/')
   }
   const nav = ({ isActive }: { isActive: boolean }) => `px-2 py-1 rounded ${isActive ? 'bg-slate-700' : 'hover:bg-slate-800'}`
+  // B3: chi ha appena fatto il primo accesso sceglie username e accetta i termini prima di tutto il resto
+  const open = ['/benvenuto', '/termini', '/privacy', '/contatti']
+  if (session && profile === null && !open.includes(pathname)) {
+    return <Navigate to={`/benvenuto?next=${encodeURIComponent(pathname + query)}`} replace />
+  }
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       <header className="bg-slate-900 text-white">
@@ -26,8 +38,14 @@ function Layout() {
           <nav aria-label={t.nav.main} className="flex gap-1 text-sm">
             <NavLink to="/" end className={nav}>{t.nav.catalog}</NavLink>
             <NavLink to="/pipeline" className={nav}>{t.nav.pipeline}</NavLink>
+            {profile && <NavLink to="/carica" className={nav}>{t.nav2.upload}</NavLink>}
+            {isCurator(profile) && <NavLink to="/moderazione" className={nav}>{t.nav2.moderation}</NavLink>}
           </nav>
-          <form role="search" onSubmit={search} className="ml-auto w-full sm:w-64">
+          <div className="ml-auto text-sm">
+            {profile ? <NavLink to={`/u/${profile.username}`} aria-label={t.nav2.account} className={nav}>{profile.username}</NavLink>
+              : session === null && <NavLink to={`/accedi?next=${encodeURIComponent(pathname + query)}`} className={nav}>{t.nav2.signIn}</NavLink>}
+          </div>
+          <form role="search" onSubmit={search} className="w-full sm:w-64">
             <input name="q" type="search" aria-label={t.nav.search} placeholder={t.nav.searchPlaceholder}
               className="w-full rounded bg-slate-800 px-3 py-1.5 text-sm placeholder:text-slate-400 focus:bg-white focus:text-slate-900" />
           </form>
@@ -42,6 +60,7 @@ function Layout() {
 createRoot(document.getElementById('root') as HTMLElement).render(
   <StrictMode>
     <BrowserRouter>
+      <AuthProvider>
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Catalog />} />
@@ -49,9 +68,15 @@ createRoot(document.getElementById('root') as HTMLElement).render(
           <Route path="tag/:tag" element={<Catalog />} />
           <Route path="meme/:slug" element={<MemePage />} />
           <Route path="pipeline" element={<Pipeline />} />
+          <Route path="accedi" element={<Login />} />
+          <Route path="benvenuto" element={<Welcome />} />
+          <Route path="u/:username" element={<Profile />} />
+          <Route path="carica" element={<RequireMember><Upload /></RequireMember>} />
+          <Route path="moderazione" element={<RequireMember curator><Moderation /></RequireMember>} />
           <Route path="*" element={<Status empty={t.common.notFound} />} />
         </Route>
       </Routes>
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
 )

@@ -58,3 +58,14 @@ export function Status({ loading, error, empty }: { loading?: boolean; error?: b
   if (loading) return <p className="text-slate-500" aria-live="polite">{t.common.loading}</p>
   return empty ? <p className="text-slate-500">{empty}</p> : null
 }
+
+// Stili condivisi dei form
+export const field = 'mt-1 block w-full rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900'
+export const primary = 'rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50'
+export const secondary = 'rounded border border-slate-300 bg-white px-4 py-1.5 text-sm font-medium text-slate-900 hover:bg-slate-50 disabled:opacity-50'
+
+export const ErrorText = ({ children }: { children?: string }) =>
+  children ? <p role="alert" className="text-sm text-rose-700">{children}</p> : null
+
+/** Solo percorsi interni, per evitare redirect verso altri siti. */
+export const safeNext = (next: string | null) => (next?.startsWith('/') && !next.startsWith('//') ? next : '/')
