@@ -27,6 +27,7 @@ export function MemeCard({ meme, compact }: { meme: Card; compact?: boolean }) {
   return (
     <Link
       to={`/meme/${meme.slug}`}
+      draggable={false}  // il drag nativo di link e immagini bloccherebbe quello della pipeline
       className="group block overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm hover:border-slate-400 focus-visible:outline-2 focus-visible:outline-indigo-600"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
@@ -34,6 +35,7 @@ export function MemeCard({ meme, compact }: { meme: Card; compact?: boolean }) {
           src={imageUrl(meme.thumb_path)}
           alt={meme.is_nsfw ? t.meme.nsfw : meme.alt_text}
           loading="lazy"
+          draggable={false}
           width={400}
           height={300}
           className={`h-full w-full object-cover ${meme.is_nsfw ? 'scale-110 blur-xl' : ''}`}
