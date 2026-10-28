@@ -15,7 +15,8 @@
     "test": "vitest run",
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --linked > src/lib/database.types.ts",
-    "seed": "node --env-file=.env.local scripts/seed.ts"
+    "seed": "node --env-file=.env.local scripts/seed.ts",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

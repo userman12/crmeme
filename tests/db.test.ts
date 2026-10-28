@@ -1,5 +1,6 @@
 // NFR-11: permessi e formula dello score, verificati contro il progetto Supabase di sviluppo.
 // Ogni client usa l'API pubblica come farebbe chiunque, senza passare dall'interfaccia.
+import { createHash } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Database } from '../src/lib/database.types'
@@ -36,7 +37,7 @@ const fakeMeme = (n: number) => ({
   alt_text: 'Immagine di test',
   image_path: 'test/x.png',
   thumb_path: 'test/x_thumb.png',
-  image_sha256: (run + n).padEnd(64, '0').replace(/[^0-9a-f]/g, 'a'),
+  image_sha256: createHash('sha256').update(`${run}:${n}`).digest('hex'),
 })
 
 async function insertMeme(client: Db, n: number) {
@@ -172,5 +173,43 @@ describe('storage (NFR-01, NFR-04)', () => {
     expect(txt.error).not.toBeNull()
     const other = await bucket.upload(`${curator.id}/x.png`, new Blob(['x'], { type: 'image/png' }))
     expect(other.error).not.toBeNull()  // solo nella propria cartella
+  })
+})
+
+describe('contributi (FR-11, FR-15, FR-24)', () => {
+  it('find_duplicate: il visitatore non può usarlo, l’utente sì; lo slug solo se pubblico', async () => {
+    const { data: approved } = await admin.from('memes').select('slug, image_sha256').eq('status', 'approved').limit(1).single()
+    const { data: pending } = await admin.from('memes').select('image_sha256').eq('status', 'pending').limit(1).single()
+    expect((await anon.rpc('find_duplicate', { p_sha256: approved?.image_sha256 ?? '' })).error).not.toBeNull()
+    expect((await user.client.rpc('find_duplicate', { p_sha256: approved?.image_sha256 ?? '' })).data)
+      .toEqual([{ slug: approved?.slug, status: 'approved' }])
+    expect((await user.client.rpc('find_duplicate', { p_sha256: pending?.image_sha256 ?? '' })).data)
+      .toEqual([{ slug: null, status: 'pending' }])
+    expect((await user.client.rpc('find_duplicate', { p_sha256: 'f'.repeat(64) })).data).toEqual([])
+  })
+
+  it('add_sighting registra un’attività e rifiuta URL non validi', async () => {
+    const ok = await user.client.rpc('add_sighting', { p_meme: memeId, p_url: 'https://example.com/post/1', p_seen_on: '2026-10-01' })
+    expect(ok.error).toBeNull()
+    const bad = await user.client.rpc('add_sighting', { p_meme: memeId, p_url: 'javascript:alert(1)', p_seen_on: '2026-10-01' })
+    expect(bad.error?.message).toBe('invalid_url')
+    expect((await anon.rpc('add_sighting', { p_meme: memeId, p_url: 'https://example.com', p_seen_on: '2026-10-01' })).error).not.toBeNull()
+    const { data } = await anon.from('activities').select('payload').eq('meme_id', memeId).eq('type', 'sighting_added')
+    expect(data).toEqual([{ payload: { url: 'https://example.com/post/1', seen_on: '2026-10-01' } }])
+  })
+
+  it('delete_my_account: i meme restano a "utente eliminato", i voti spariscono', async () => {
+    const leaving = await member('leaving')
+    const target = (await admin.from('memes').select('id, up_votes').eq('status', 'approved')
+      .neq('uploader_id', leaving.id).limit(1).single()).data
+    if (!target) throw new Error('nessun meme')
+    expect((await leaving.client.from('votes').insert({ meme_id: target.id, value: 1 })).error).toBeNull()
+    const mine = await insertMeme(leaving.client, 50)
+    expect((await leaving.client.rpc('delete_my_account')).error).toBeNull()
+    const { data: m } = await admin.from('memes').select('uploader_id').eq('id', mine.id).single()
+    expect(m?.uploader_id).toBeNull()
+    const { data: after } = await admin.from('memes').select('up_votes').eq('id', target.id).single()
+    expect(after?.up_votes).toBe(target.up_votes)
+    expect((await admin.auth.admin.getUserById(leaving.id)).data.user).toBeNull()
   })
 })
