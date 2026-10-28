@@ -22,8 +22,10 @@ export function Catalog() {
     : route.tag ? tag && t.catalog.tagTitle(tag.name) : t.catalog.title
   useTitle(heading)
 
-  if (tax.error) return <Status error />
-  if (tax.loading) return <Status loading />
+  // NFR-02: la home non aspetta community e tag; servono solo per filtrare per uno di essi
+  const needsTax = !!(route.community || route.tag || p('community') || p('tag'))
+  if (needsTax && tax.error) return <Status error />
+  if (needsTax && tax.loading) return <Status loading />
   if ((route.community && !community) || (route.tag && !tag)) return <Status empty={t.catalog.notFound} />
 
   const filters: Filters = {
@@ -46,7 +48,7 @@ export function Catalog() {
       <h1 className="text-2xl font-semibold text-slate-900">{heading}</h1>
       {route.community && community?.description && <p className="mt-1 text-slate-600">{community.description}</p>}
 
-      <form key={params.toString()} onSubmit={submit} aria-label={t.catalog.filters}
+      <form key={params.toString() + !!tax.data} onSubmit={submit} aria-label={t.catalog.filters}
         className="mt-4 grid grid-cols-2 gap-3 rounded-md border border-slate-200 bg-white p-3 sm:grid-cols-3 lg:grid-cols-6">
         <label className="col-span-2 text-sm text-slate-700 sm:col-span-3 lg:col-span-2">
           {t.catalog.query}
@@ -126,7 +128,7 @@ function Results({ filters }: { filters: Filters }) {
       <p className="mb-3 text-sm text-slate-600" aria-live="polite">{t.catalog.results(shown.count)}</p>
       {shown.count === 0 ? <Status empty={t.catalog.empty} /> : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {shown.rows.map((m) => <li key={m.id}><MemeCard meme={m} /></li>)}
+          {shown.rows.map((m, i) => <li key={m.id}><MemeCard meme={m} eager={i < 4} /></li>)}
         </ul>
       )}
       {shown.rows.length < shown.count && (

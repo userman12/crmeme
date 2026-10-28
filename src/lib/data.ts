@@ -46,11 +46,12 @@ export function useData<T>(load: () => PromiseLike<T>, deps: unknown[]) {
   }
 }
 
-// NFR-08: titolo della pagina aggiornato lato client
-export function useTitle(title?: string) {
+// NFR-08: titolo e descrizione della pagina aggiornati lato client
+export function useTitle(title?: string, description?: string) {
   useEffect(() => {
     document.title = title ? `${title} · ${t.app.name}` : `${t.app.name} · ${t.app.tagline}`
-  }, [title])
+    document.querySelector('meta[name="description"]')?.setAttribute('content', (description || t.app.description).slice(0, 160))
+  }, [title, description])
 }
 
 type Taxonomy = {

@@ -38,7 +38,8 @@ export function MemePage() {
   const last = typeof query.last === 'object' && query.last?.m.slug === slug ? query.last : undefined
   const data = query.data !== undefined ? query.data : last
   const removed = data === 'removed' || (typeof data === 'object' && data?.m.status === 'removed')
-  useTitle(removed ? t.removed.title : typeof data === 'object' ? data?.m.title : undefined)
+  useTitle(removed ? t.removed.title : typeof data === 'object' ? data?.m.title : undefined,
+    typeof data === 'object' && !removed ? data?.m.description || data?.m.alt_text : undefined)
 
   if (query.error) return <Status error />
   if (data === undefined) return <Status loading />
