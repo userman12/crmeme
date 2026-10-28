@@ -490,6 +490,7 @@ export type Database = {
         Args: { m: Database["public"]["Tables"]["memes"]["Row"] }
         Returns: number
       }
+      dashboard: { Args: never; Returns: Json }
       delete_my_account: { Args: never; Returns: undefined }
       export_my_data: { Args: never; Returns: Json }
       find_duplicate: {
